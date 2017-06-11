@@ -1,3 +1,5 @@
+# ? Init with a dict, e.g. {Home: MAL}
+
 class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     """Live train time sensor from UK transportapi.com."""
     ICON = 'mdi:train'
@@ -6,12 +8,11 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         """Construct a live bus time sensor."""
         self._station_code = station_code         # stick to the naming convention of transportAPI
         self._destination_name = destination_name
-        self._next_train_time = None
-        self._next_train_status = None
+        self._next_train = {}
 
         sensor_name = 'Next train to {}'.format(destination_name)
         query_url =  'train/station/{}/live.json'.format(station_code)
-        
+
         # also requires '&darwin=false&destination=WAT&train_status=passenger'
 
         UkTransportSensor.__init__(
@@ -23,7 +24,8 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         params = {'darwin': 'false', 'destination': self._destination_name, 'train_status': 'passenger'}
 
         self._do_api_request(params)
-
-        if self._data != {}:
-            self._next_train_time = self._data['departures']['all'][0]['aimed_arrival_time']
-            self._next_train_status = self._data['departures']['all'][0]['status']
+        departure = self._data['departures']['all'][0]    # next train
+        self._next_train = {
+            'aimed_arrival_time': departure['aimed_arrival_time'],
+            'status': departure['status']
+        }     
