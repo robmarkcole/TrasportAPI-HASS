@@ -1,0 +1,63 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: Home
+  # metric for Metric, imperial for Imperial
+  unit_system: metric
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: Europe/London
+
+frontend:
+config:
+http:
+updater:
+conversation:
+history:
+logbook:
+
+sensor:
+  - platform: uk_transport
+    app_id: !secret uk_transport_app_id
+    app_key: !secret uk_transport_app_key
+    live_bus_time:
+        - stop_atcocode: 340000368SHE
+          direction: Parkway Station
+    live_train_time:
+        - station_code: WIM
+          destination_name: WAT
+
+  - platform: template
+    sensors:
+      next_train_status:
+        friendly_name: 'Next train status'
+        value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].status}}'
+      next_trains_origin:
+        friendly_name: 'Next train origin'
+        value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].origin_name}}'
+      next_trains_estimated:
+        friendly_name: 'Next train estimated'
+        value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].estimated}}'
+      next_trains_scheduled:
+        friendly_name: 'Next train scheduled'
+        value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].scheduled}}'
+      next_trains_platform:
+        friendly_name: 'Next train platform'
+        value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].platform}}'
+
+
+group:
+  default_view:
+    view: yes
+    icon: mdi:home
+    entities:
+      - group.Travel_group
+
+  Travel_group:
+    name: Upcoming travel
+    entities:
+      - sensor.next_bus_to_parkway_station
+      - sensor.next_train_to_wat
+      - sensor.next_train_status
+      - sensor.next_trains_estimated
+      - sensor.next_trains_origin
+      - sensor.next_trains_platform
+      - sensor.next_trains_scheduled
