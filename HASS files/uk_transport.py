@@ -34,7 +34,7 @@ ATTR_NEXT_BUSES = 'next_buses'
 ATTRIBUTION = "Data provided by transportapi.com"
 
 ATTR_STATION_CODE = 'station_code'
-ATTR_calling_at = 'calling_at'
+ATTR_CALLING_AT = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
 
 SCAN_INTERVAL = timedelta(minutes=1)
@@ -47,7 +47,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
         vol.Required(CONF_BUS_DIRECTION): cv.string}],
     vol.Optional(CONF_LIVE_TRAIN_TIME): [{
         vol.Required(ATTR_STATION_CODE): cv.string,
-        vol.Required(ATTR_calling_at): cv.string}]
+        vol.Required(ATTR_CALLING_AT): cv.string}]
 })
 
 
@@ -68,7 +68,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     if config.get(CONF_LIVE_TRAIN_TIME):
         for live_train_time in config.get(CONF_LIVE_TRAIN_TIME):
             station_code = live_train_time.get(ATTR_STATION_CODE)
-            calling_at = live_train_time.get(ATTR_calling_at)
+            calling_at = live_train_time.get(ATTR_CALLING_AT)
             sensors.append(
                 UkTransportLiveTrainTimeSensor(
                     config.get(CONF_API_APP_ID),
@@ -248,7 +248,7 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
             attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}  # {'attribution': 'Data provided by transportapi.com'}
             for key in [
                     ATTR_STATION_CODE,
-                    ATTR_calling_at
+                    ATTR_CALLING_AT
             ]:
                 attrs[key] = self._data.get(key)           # place these attributes
             attrs[ATTR_NEXT_TRAINS] = self._next_trains
