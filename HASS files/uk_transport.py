@@ -37,7 +37,7 @@ ATTR_STATION_CODE = 'station_code'
 ATTR_calling_at = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
 
-SCAN_INTERVAL = timedelta(minutes=3)
+SCAN_INTERVAL = timedelta(minutes=1)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
@@ -222,22 +222,23 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         self._do_api_request(params)
 
         if self._data != {}:
-            self._next_trains = []
+            if 'error' in self._data:          # if query returns an error
+                self._state = 'Error in query'
+            else:
+                self._next_trains = []
+                for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
+                    self._next_trains.append({
+                        'origin_name': departure['origin_name'],
+                        'calling_at': departure['calling_at'],
+                        'status': departure['status'],
+                        'scheduled': departure['aimed_departure_time'],
+                        'estimated': departure['expected_departure_time'],
+                        'platform': departure['platform'],
+                        'operator_name': departure['operator_name']
+                        })
 
-            for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
-                #print_json(departure)   # uncomment to see all fields
-                self._next_trains.append({
-                    'origin_name': departure['origin_name'],
-                    'calling_at': departure['calling_at'],
-                    'status': departure['status'],
-                    'scheduled': departure['aimed_departure_time'],
-                    'estimated': departure['expected_departure_time'],
-                    'platform': departure['platform'],
-                    'operator_name': departure['operator_name']
-                    })
-
-            self._state = min(map(
-                _delta_mins, [train['scheduled'] for train in self._next_trains]
+                self._state = min(map(
+                    _delta_mins, [train['scheduled'] for train in self._next_trains]
             ))
 
     @property
