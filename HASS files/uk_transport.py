@@ -229,7 +229,7 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
                 for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
                     self._next_trains.append({
                         'origin_name': departure['origin_name'],
-                        'calling_at': departure['calling_at'],
+                        'destination_name': departure['destination_name'],
                         'status': departure['status'],
                         'scheduled': departure['aimed_departure_time'],
                         'estimated': departure['expected_departure_time'],
