@@ -34,10 +34,10 @@ ATTR_NEXT_BUSES = 'next_buses'
 ATTRIBUTION = "Data provided by transportapi.com"
 
 ATTR_STATION_CODE = 'station_code'
-ATTR_DESTINATION_NAME = 'destination_name'
+ATTR_calling_at = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
 
-SCAN_INTERVAL = timedelta(minutes=1)
+SCAN_INTERVAL = timedelta(minutes=3)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
@@ -47,7 +47,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
         vol.Required(CONF_BUS_DIRECTION): cv.string}],
     vol.Optional(CONF_LIVE_TRAIN_TIME): [{
         vol.Required(ATTR_STATION_CODE): cv.string,
-        vol.Required(ATTR_DESTINATION_NAME): cv.string}]
+        vol.Required(ATTR_calling_at): cv.string}]
 })
 
 
@@ -68,13 +68,13 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     if config.get(CONF_LIVE_TRAIN_TIME):
         for live_train_time in config.get(CONF_LIVE_TRAIN_TIME):
             station_code = live_train_time.get(ATTR_STATION_CODE)
-            destination_name = live_train_time.get(ATTR_DESTINATION_NAME)
+            calling_at = live_train_time.get(ATTR_calling_at)
             sensors.append(
                 UkTransportLiveTrainTimeSensor(
                     config.get(CONF_API_APP_ID),
                     config.get(CONF_API_APP_KEY),
                     station_code,
-                    destination_name))
+                    calling_at))
 
     add_devices(sensors, True)
 
@@ -193,19 +193,19 @@ class UkTransportLiveBusTimeSensor(UkTransportSensor):
         """Return the unit this state is expressed in."""
         return "min"
 
-# As per bus but route becomes origin_name, direction becomes destination_name, next_suses becomes next_trains
+# As per bus but route becomes origin_name, direction becomes calling_at, next_suses becomes next_trains
 
 class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     """Live train time sensor from UK transportapi.com."""
     ICON = 'mdi:train'
 
-    def __init__(self, api_app_id, api_app_key, station_code, destination_name):
+    def __init__(self, api_app_id, api_app_key, station_code, calling_at):
         """Construct a live bus time sensor."""
         self._station_code = station_code         # stick to the naming convention of transportAPI
-        self._destination_name = destination_name
+        self._calling_at = calling_at
         self._next_trains = {}
 
-        sensor_name = 'Next train to {}'.format(destination_name)
+        sensor_name = 'Next train to {}'.format(calling_at)
         query_url =  'train/station/{}/live.json'.format(station_code)
 
         print(query_url)
@@ -217,28 +217,27 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
 
     def update(self):
         """Get the latest live departure data for the specified stop."""
-        params = {'darwin': 'false', 'calling_at': self._destination_name, 'train_status': 'passenger'}
+        params = {'darwin': 'false', 'calling_at': self._calling_at, 'train_status': 'passenger'}
 
         self._do_api_request(params)
 
         if self._data != {}:
-            if 'error' in self._data:          # if query returns an error
-                self._state = 'Error in query'
-            else:
-                self._next_trains = []
-                for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
-                    self._next_trains.append({
-                        'origin_name': departure['origin_name'],
-                        'destination_name': departure['destination_name'],
-                        'status': departure['status'],
-                        'scheduled': departure['aimed_departure_time'],
-                        'estimated': departure['expected_departure_time'],
-                        'platform': departure['platform'],
-                        'operator_name': departure['operator_name']
-                        })
+            self._next_trains = []
 
-                self._state = min(map(
-                    _delta_mins, [train['scheduled'] for train in self._next_trains]
+            for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
+                #print_json(departure)   # uncomment to see all fields
+                self._next_trains.append({
+                    'origin_name': departure['origin_name'],
+                    'calling_at': departure['calling_at'],
+                    'status': departure['status'],
+                    'scheduled': departure['aimed_departure_time'],
+                    'estimated': departure['expected_departure_time'],
+                    'platform': departure['platform'],
+                    'operator_name': departure['operator_name']
+                    })
+
+            self._state = min(map(
+                _delta_mins, [train['scheduled'] for train in self._next_trains]
             ))
 
     @property
@@ -248,7 +247,7 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
             attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}  # {'attribution': 'Data provided by transportapi.com'}
             for key in [
                     ATTR_STATION_CODE,
-                    ATTR_DESTINATION_NAME
+                    ATTR_calling_at
             ]:
                 attrs[key] = self._data.get(key)           # place these attributes
             attrs[ATTR_NEXT_TRAINS] = self._next_trains
