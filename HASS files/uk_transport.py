@@ -222,22 +222,23 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         self._do_api_request(params)
 
         if self._data != {}:
-            self._next_trains = []
+            if 'error' in self._data:          # if query returns an error
+                self._state = 'Error in query'
+            else:
+                self._next_trains = []
+                for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
+                    self._next_trains.append({
+                        'origin_name': departure['origin_name'],
+                        'destination_name': departure['destination_name'],
+                        'status': departure['status'],
+                        'scheduled': departure['aimed_departure_time'],
+                        'estimated': departure['expected_departure_time'],
+                        'platform': departure['platform'],
+                        'operator_name': departure['operator_name']
+                        })
 
-            for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
-                #print_json(departure)   # uncomment to see all fields
-                self._next_trains.append({
-                    'origin_name': departure['origin_name'],
-                    'destination_name': departure['destination_name'],
-                    'status': departure['status'],
-                    'scheduled': departure['aimed_departure_time'],
-                    'estimated': departure['expected_departure_time'],
-                    'platform': departure['platform'],
-                    'operator_name': departure['operator_name']
-                    })
-
-            self._state = min(map(
-                _delta_mins, [train['scheduled'] for train in self._next_trains]
+                self._state = min(map(
+                    _delta_mins, [train['scheduled'] for train in self._next_trains]
             ))
 
     @property
