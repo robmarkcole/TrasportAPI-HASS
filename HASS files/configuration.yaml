@@ -23,7 +23,7 @@ sensor:
           direction: Parkway Station
     live_train_time:
         - station_code: WIM
-          destination_name: WAT
+          calling_at: WAT
 
   - platform: template
     sensors:
