@@ -217,7 +217,7 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
 
     def update(self):
         """Get the latest live departure data for the specified stop."""
-        params = {'darwin': 'false', 'destination': self._destination_name, 'train_status': 'passenger'}
+        params = {'darwin': 'false', 'calling_at': self._destination_name, 'train_status': 'passenger'}
 
         self._do_api_request(params)
 
