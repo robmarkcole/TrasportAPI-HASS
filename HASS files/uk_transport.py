@@ -224,6 +224,8 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         if self._data != {}:
             if 'error' in self._data:          # if query returns an error
                 self._state = self._data['error']
+            if not self._data['departures']['all']:    # if there is no data
+                self._state = 'No data'
             else:
                 self._next_trains = []
                 for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
