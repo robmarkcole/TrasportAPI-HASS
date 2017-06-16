@@ -203,13 +203,9 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         """Construct a live bus time sensor."""
         self._station_code = station_code         # stick to the naming convention of transportAPI
         self._calling_at = calling_at
-        self._next_trains = {}
 
         sensor_name = 'Next train to {}'.format(calling_at)
         query_url =  'train/station/{}/live.json'.format(station_code)
-
-        print(query_url)
-        # also requires '&darwin=false&destination=WAT&train_status=passenger'
 
         UkTransportSensor.__init__(
             self, sensor_name, api_app_id, api_app_key, query_url
@@ -217,17 +213,19 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
 
     def update(self):
         """Get the latest live departure data for the specified stop."""
-        params = {'darwin': 'false', 'calling_at': self._calling_at, 'train_status': 'passenger'}
+        params = {'darwin': 'false',
+                  'calling_at': self._calling_at,
+                  'train_status': 'passenger'}
 
         self._do_api_request(params)
+        self._next_trains = [] # Clear
 
-        if self._data != {}:
+        if self._data != {}:                   # If not empty
             if 'error' in self._data:          # if query returns an error
-                self._state = self._data['error']
-            if not self._data['departures']['all']:    # if there is no data
-                self._state = 'No data'
+                self._state = self._data['Error from transportAPI']
+            if self._data['departures']['all'] == []:    # if there are no departures
+                self._state = 'No departures'
             else:
-                self._next_trains = []
                 for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
                     self._next_trains.append({
                         'origin_name': departure['origin_name'],
@@ -246,14 +244,15 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     @property
     def device_state_attributes(self):
         """Return other details about the sensor state."""
-        if self._data is not None:
+        if self._data != {}:
             attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}  # {'attribution': 'Data provided by transportapi.com'}
             for key in [
                     ATTR_STATION_CODE,
                     ATTR_CALLING_AT
             ]:
                 attrs[key] = self._data.get(key)           # place these attributes
-            attrs[ATTR_NEXT_TRAINS] = self._next_trains
+            if self._next_trains:
+                attrs[ATTR_NEXT_TRAINS] = self._next_trains # if there is data, append
             return attrs
 
     @property
