@@ -18,18 +18,17 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
+# Platform wide
 CONF_API_APP_KEY = 'app_key'
 CONF_API_APP_ID = 'app_id'
-CONF_LIVE_BUS_TIME = 'live_bus_time'
 CONF_LIVE_TRAIN_TIME = 'live_train_time'
 
-# API codes for travel time details
-ATTR_REQUEST_TIME = 'request_time'
+# Sensor specific
 ATTRIBUTION = "Data provided by transportapi.com"
-
 ATTR_STATION_CODE = 'station_code'
 ATTR_CALLING_AT = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
+ATTR_UPDATE_INTERVAL = 'update_interval'
 
 SCAN_INTERVAL = timedelta(minutes=1)
 
@@ -38,23 +37,25 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_KEY): cv.string,
     vol.Optional(CONF_LIVE_TRAIN_TIME): [{
         vol.Required(ATTR_STATION_CODE): cv.string,
-        vol.Required(ATTR_CALLING_AT): cv.string}]
+        vol.Required(ATTR_CALLING_AT): cv.string,
+        vol.Optional(ATTR_UPDATE_INTERVAL, default=timedelta(seconds=120)): (
+        vol.All(cv.time_period, cv.positive_timedelta))}]
 })
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Get the uk_transport sensor."""
     sensors = []
-    if config.get(CONF_LIVE_TRAIN_TIME):
-        for live_train_time in config.get(CONF_LIVE_TRAIN_TIME):
-            station_code = live_train_time.get(ATTR_STATION_CODE)
-            calling_at = live_train_time.get(ATTR_CALLING_AT)
-            sensors.append(
-                UkTransportLiveTrainTimeSensor(
-                    config.get(CONF_API_APP_ID),
-                    config.get(CONF_API_APP_KEY),
-                    station_code,
-                    calling_at))
+    for live_train_time in config.get(CONF_LIVE_TRAIN_TIME):
+        station_code = live_train_time.get(ATTR_STATION_CODE)
+        calling_at = live_train_time.get(ATTR_CALLING_AT)
+        sensors.append(
+            UkTransportLiveTrainTimeSensor(
+                config.get(CONF_API_APP_ID),
+                config.get(CONF_API_APP_KEY),
+                station_code,
+                calling_at,
+                update_interval = live_train_time.get(ATTR_UPDATE_INTERVAL)))
 
     add_devices(sensors, True)
 
@@ -115,10 +116,11 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     """Live train time sensor from UK transportapi.com."""
     ICON = 'mdi:train'
 
-    def __init__(self, api_app_id, api_app_key, station_code, calling_at):
+    def __init__(self, api_app_id, api_app_key, station_code, calling_at, update_interval):
         """Construct a live bus time sensor."""
         self._station_code = station_code         # stick to the naming convention of transportAPI
         self._calling_at = calling_at
+        self._update_interval = update_interval
 
         sensor_name = 'Next train to {}'.format(calling_at)
         query_url =  'train/station/{}/live.json'.format(station_code)
@@ -150,7 +152,8 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
                         'scheduled': departure['aimed_departure_time'],
                         'estimated': departure['expected_departure_time'],
                         'platform': departure['platform'],
-                        'operator_name': departure['operator_name']
+                        'operator_name': departure['operator_name'],
+                        'update_interval':str(self._update_interval)
                         })
 
                 self._state = min(map(
@@ -160,16 +163,10 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     @property
     def device_state_attributes(self):
         """Return other details about the sensor state."""
-        if self._data != {}:
-            attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}  # {'attribution': 'Data provided by transportapi.com'}
-            for key in [
-                    ATTR_STATION_CODE,
-                    ATTR_CALLING_AT
-            ]:
-                attrs[key] = self._data.get(key)           # place these attributes
-            if self._next_trains:
-                attrs[ATTR_NEXT_TRAINS] = self._next_trains # if there is data, append
-            return attrs
+        attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}  # {'attribution': 'Data provided by transportapi.com'}
+        if self._next_trains:
+            attrs[ATTR_NEXT_TRAINS] = self._next_trains # if there is data, append
+        return attrs
 
     @property
     def unit_of_measurement(self):

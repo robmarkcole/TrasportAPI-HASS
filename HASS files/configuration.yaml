@@ -21,6 +21,8 @@ sensor:
     live_train_time:
         - station_code: MAL # BIR
           calling_at: WAT
+          update_interval:
+            minutes: 10
 
   - platform: template
     sensors:
@@ -39,6 +41,9 @@ sensor:
       next_trains_platform:
         friendly_name: 'Next train platform'
         value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].platform}}'
+      next_trains_update_interval:
+        friendly_name: 'Next train update_interval'
+        value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].update_interval}}'
 
 
 group:
@@ -58,3 +63,4 @@ group:
       - sensor.next_trains_origin
       - sensor.next_trains_platform
       - sensor.next_trains_scheduled
+      - sensor.next_trains_update_interval
