@@ -22,15 +22,9 @@ CONF_API_APP_KEY = 'app_key'
 CONF_API_APP_ID = 'app_id'
 CONF_LIVE_BUS_TIME = 'live_bus_time'
 CONF_LIVE_TRAIN_TIME = 'live_train_time'
-CONF_STOP_ATCOCODE = 'stop_atcocode'
-CONF_BUS_DIRECTION = 'direction'
 
 # API codes for travel time details
-ATTR_ATCOCODE = 'atcocode'
-ATTR_LOCALITY = 'locality'
-ATTR_STOP_NAME = 'stop_name'
 ATTR_REQUEST_TIME = 'request_time'
-ATTR_NEXT_BUSES = 'next_buses'
 ATTRIBUTION = "Data provided by transportapi.com"
 
 ATTR_STATION_CODE = 'station_code'
@@ -42,9 +36,6 @@ SCAN_INTERVAL = timedelta(minutes=1)
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
     vol.Required(CONF_API_APP_KEY): cv.string,
-    vol.Optional(CONF_LIVE_BUS_TIME): [{
-        vol.Required(CONF_STOP_ATCOCODE): cv.string,
-        vol.Required(CONF_BUS_DIRECTION): cv.string}],
     vol.Optional(CONF_LIVE_TRAIN_TIME): [{
         vol.Required(ATTR_STATION_CODE): cv.string,
         vol.Required(ATTR_CALLING_AT): cv.string}]
@@ -54,17 +45,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Get the uk_transport sensor."""
     sensors = []
-    if config.get(CONF_LIVE_BUS_TIME):  # retunrs None if not present
-        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):           # trhows exception if not present
-            stop_atcocode = live_bus_time.get(CONF_STOP_ATCOCODE)
-            bus_direction = live_bus_time.get(CONF_BUS_DIRECTION)
-            sensors.append(
-                UkTransportLiveBusTimeSensor(
-                    config.get(CONF_API_APP_ID),
-                    config.get(CONF_API_APP_KEY),
-                    stop_atcocode,
-                    bus_direction))
-
     if config.get(CONF_LIVE_TRAIN_TIME):
         for live_train_time in config.get(CONF_LIVE_TRAIN_TIME):
             station_code = live_train_time.get(ATTR_STATION_CODE)
@@ -89,7 +69,7 @@ class UkTransportSensor(Entity):
     """
 
     TRANSPORT_API_URL_BASE = "https://transportapi.com/v3/uk/"
-    ICON = 'mdi:car'
+    ICON = 'mdi:train'
 
     def __init__(self, name, api_app_id, api_app_key, url):
         """Initialize the sensor."""
@@ -130,70 +110,6 @@ class UkTransportSensor(Entity):
             _LOGGER.warning(
                 'Invalid response from transportapi.com: %s', req_exc
             )
-
-
-class UkTransportLiveBusTimeSensor(UkTransportSensor):
-    """Live bus time sensor from UK transportapi.com."""
-    ICON = 'mdi:bus'
-
-    def __init__(self, api_app_id, api_app_key, stop_atcocode, bus_direction):
-        """Construct a live bus time sensor."""
-        self._stop_atcocode = stop_atcocode
-        self._bus_direction = bus_direction
-        self._next_buses = []
-        self._destination_re = re.compile(
-            '{}'.format(bus_direction), re.IGNORECASE
-        )
-
-        sensor_name = 'Next bus to {}'.format(bus_direction)
-        stop_url = 'bus/stop/{}/live.json'.format(stop_atcocode)
-
-        UkTransportSensor.__init__(
-            self, sensor_name, api_app_id, api_app_key, stop_url
-        )
-
-    def update(self):
-        """Get the latest live departure data for the specified stop."""
-        params = {'group': 'route', 'nextbuses': 'no'}
-
-        self._do_api_request(params)
-
-        if self._data != {}:
-            self._next_buses = []
-
-            for (route, departures) in self._data['departures'].items():
-                for departure in departures:
-                    if self._destination_re.search(departure['direction']):
-                        self._next_buses.append({
-                            'route': route,
-                            'direction': departure['direction'],
-                            'scheduled': departure['aimed_departure_time'],
-                            'estimated': departure['best_departure_estimate']
-                        })
-
-            self._state = min(map(
-                _delta_mins, [bus['scheduled'] for bus in self._next_buses]
-            ))
-
-    @property
-    def device_state_attributes(self):
-        """Return other details about the sensor state."""
-        if self._data is not None:
-            attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}
-            for key in [
-                    ATTR_ATCOCODE, ATTR_LOCALITY, ATTR_STOP_NAME,
-                    ATTR_REQUEST_TIME
-            ]:
-                attrs[key] = self._data.get(key)
-            attrs[ATTR_NEXT_BUSES] = self._next_buses
-            return attrs
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit this state is expressed in."""
-        return "min"
-
-# As per bus but route becomes origin_name, direction becomes calling_at, next_suses becomes next_trains
 
 class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     """Live train time sensor from UK transportapi.com."""
