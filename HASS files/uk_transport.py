@@ -125,14 +125,15 @@ class UkTransportSensor(Entity):
         response = requests.get(self._url, params=request_params)
         if response.status_code != 200:
             _LOGGER.warning('Invalid response from API')
-        elif response.json()['error'] is None:
-            self._data = response.json()
-        elif 'exceeded' in response.json()['error']:
-            self._state = 'Useage limites exceeded'
-        elif 'invalid' in response.json()['error']:
-            self._state = 'Credentials invalid'
+        elif 'error' in response.json():
+            if 'exceeded' in response.json()['error']:
+                self._state = 'Useage limites exceeded'
+            if 'invalid' in response.json()['error']:
+                self._state = 'Credentials invalid'
+            else:
+                self._state = response.json()['error']
         else:
-            self._state = response.json()['error']
+            self._data = response.json()
 
 
 class UkTransportLiveBusTimeSensor(UkTransportSensor):
