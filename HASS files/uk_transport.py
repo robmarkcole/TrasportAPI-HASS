@@ -122,17 +122,17 @@ class UkTransportSensor(Entity):
             'app_key': self._api_app_key,
         }, **params)
 
-        try:
-            response = requests.get(self._url, params=request_params)
-            response.raise_for_status()
-            if response.json()['error'] is None:
-                self._data = response.json()
-            elif 'exceeded' in response.json()['error']:
-                self._state = 'Useage limites exceeded'
-        except requests.RequestException as req_exc:
-            _LOGGER.warning(
-                'Invalid response from transportapi.com: %s', req_exc
-            )
+        response = requests.get(self._url, params=request_params)
+        if response.status_code != 200:
+            _LOGGER.warning('Invalid response from API')
+        elif response.json()['error'] is None:
+            self._data = response.json()
+        elif 'exceeded' in response.json()['error']:
+            self._state = 'Useage limites exceeded'
+        elif 'invalid' in response.json()['error']:
+            self._state = 'Credentials invalid'
+        else:
+            self._state = response.json()['error']
 
 
 class UkTransportLiveBusTimeSensor(UkTransportSensor):
