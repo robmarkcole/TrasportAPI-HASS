@@ -37,7 +37,7 @@ ATTR_STATION_CODE = 'station_code'
 ATTR_CALLING_AT = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
 
-SCAN_INTERVAL = timedelta(minutes=2)
+SCAN_INTERVAL = timedelta(seconds=90)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
@@ -89,7 +89,7 @@ class UkTransportSensor(Entity):
     """
 
     TRANSPORT_API_URL_BASE = "https://transportapi.com/v3/uk/"
-    ICON = 'mdi:car'
+    ICON = 'mdi:train'
 
     def __init__(self, name, api_app_id, api_app_key, url):
         """Initialize the sensor."""
@@ -125,7 +125,10 @@ class UkTransportSensor(Entity):
         try:
             response = requests.get(self._url, params=request_params)
             response.raise_for_status()
-            self._data = response.json()
+            if response.json()['error'] is None:
+                self._data = response.json()
+            else:
+                self._state = response.json()['error']
         except requests.RequestException as req_exc:
             _LOGGER.warning(
                 'Invalid response from transportapi.com: %s', req_exc
