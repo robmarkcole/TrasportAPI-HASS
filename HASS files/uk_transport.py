@@ -130,8 +130,6 @@ class UkTransportSensor(Entity):
                 self._state = 'Useage limites exceeded'
             if 'invalid' in response.json()['error']:
                 self._state = 'Credentials invalid'
-            else:
-                self._state = response.json()['error']
         else:
             self._data = response.json()
 
