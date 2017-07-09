@@ -37,7 +37,7 @@ ATTR_STATION_CODE = 'station_code'
 ATTR_CALLING_AT = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
 
-SCAN_INTERVAL = timedelta(minutes=1)
+SCAN_INTERVAL = timedelta(minutes=2)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
