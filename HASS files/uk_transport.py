@@ -127,8 +127,8 @@ class UkTransportSensor(Entity):
             response.raise_for_status()
             if response.json()['error'] is None:
                 self._data = response.json()
-            else:
-                self._state = response.json()['error']
+            elif 'exceeded' in response.json()['error']:
+                self._state = 'Useage limites exceeded'
         except requests.RequestException as req_exc:
             _LOGGER.warning(
                 'Invalid response from transportapi.com: %s', req_exc
