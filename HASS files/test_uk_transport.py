@@ -30,15 +30,6 @@ VALID_CONFIG = {
 class TestUkTransportSensor(unittest.TestCase):
     """Test the uk_transport platform."""
 
-    def add_entities(self, new_entities, update_before_add=False):
-        """Mock add entities."""
-        if update_before_add:
-            for entity in new_entities:
-                entity.update()
-
-        for entity in new_entities:
-            self.entities.append(entity)
-
     def setUp(self):
         """Initialize values for this testcase class."""
         self.hass = get_test_home_assistant()
