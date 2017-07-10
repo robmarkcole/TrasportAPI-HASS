@@ -18,14 +18,6 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
-CONF_API_APP_KEY = 'app_key'
-CONF_API_APP_ID = 'app_id'
-CONF_LIVE_BUS_TIME = 'live_bus_time'
-CONF_LIVE_TRAIN_TIME = 'live_train_time'
-CONF_STOP_ATCOCODE = 'stop_atcocode'
-CONF_BUS_DIRECTION = 'direction'
-
-# API codes for travel time details
 ATTR_ATCOCODE = 'atcocode'
 ATTR_LOCALITY = 'locality'
 ATTR_STOP_NAME = 'stop_name'
@@ -36,6 +28,13 @@ ATTRIBUTION = "Data provided by transportapi.com"
 ATTR_STATION_CODE = 'station_code'
 ATTR_CALLING_AT = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
+
+CONF_API_APP_KEY = 'app_key'
+CONF_API_APP_ID = 'app_id'
+CONF_LIVE_BUS_TIME = 'live_bus_time'
+CONF_LIVE_TRAIN_TIME = 'live_train_time'
+CONF_STOP_ATCOCODE = 'stop_atcocode'
+CONF_BUS_DIRECTION = 'direction'
 
 SCAN_INTERVAL = timedelta(seconds=90)
 
@@ -54,8 +53,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Get the uk_transport sensor."""
     sensors = []
-    if config.get(CONF_LIVE_BUS_TIME):  # retunrs None if not present
-        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):           # trhows exception if not present
+    if config.get(CONF_LIVE_BUS_TIME):
+        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
             stop_atcocode = live_bus_time.get(CONF_STOP_ATCOCODE)
             bus_direction = live_bus_time.get(CONF_BUS_DIRECTION)
             sensors.append(
@@ -89,7 +88,6 @@ class UkTransportSensor(Entity):
     """
 
     TRANSPORT_API_URL_BASE = "https://transportapi.com/v3/uk/"
-    ICON = 'mdi:train'
 
     def __init__(self, name, api_app_id, api_app_key, url):
         """Initialize the sensor."""
@@ -109,6 +107,11 @@ class UkTransportSensor(Entity):
     def state(self):
         """Return the state of the sensor."""
         return self._state
+
+    @property
+    def unit_of_measurement(self):
+        """Return the unit this state is expressed in."""
+        return "min"
 
     @property
     def icon(self):
@@ -136,6 +139,7 @@ class UkTransportSensor(Entity):
 
 class UkTransportLiveBusTimeSensor(UkTransportSensor):
     """Live bus time sensor from UK transportapi.com."""
+
     ICON = 'mdi:bus'
 
     def __init__(self, api_app_id, api_app_key, stop_atcocode, bus_direction):
@@ -190,24 +194,19 @@ class UkTransportLiveBusTimeSensor(UkTransportSensor):
             attrs[ATTR_NEXT_BUSES] = self._next_buses
             return attrs
 
-    @property
-    def unit_of_measurement(self):
-        """Return the unit this state is expressed in."""
-        return "min"
-
-# As per bus but route becomes origin_name, direction becomes calling_at, next_suses becomes next_trains
 
 class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     """Live train time sensor from UK transportapi.com."""
+
     ICON = 'mdi:train'
 
     def __init__(self, api_app_id, api_app_key, station_code, calling_at):
         """Construct a live bus time sensor."""
-        self._station_code = station_code         # stick to the naming convention of transportAPI
+        self._station_code = station_code
         self._calling_at = calling_at
 
         sensor_name = 'Next train to {}'.format(calling_at)
-        query_url =  'train/station/{}/live.json'.format(station_code)
+        query_url = 'train/station/{}/live.json'.format(station_code)
 
         UkTransportSensor.__init__(
             self, sensor_name, api_app_id, api_app_key, query_url
@@ -220,15 +219,13 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
                   'train_status': 'passenger'}
 
         self._do_api_request(params)
-        self._next_trains = [] # Clear
+        self._next_trains = []
 
-        if self._data != {}:                   # If not empty
-            if 'error' in self._data:          # if query returns an error
-                self._state = self._data['Error from transportAPI']
-            if self._data['departures']['all'] == []:    # if there are no departures
+        if self._data != {}:
+            if self._data['departures']['all'] == []:
                 self._state = 'No departures'
             else:
-                for departure in self._data['departures']['all']:      # don't need a regex search as passing in destination to search
+                for departure in self._data['departures']['all']:
                     self._next_trains.append({
                         'origin_name': departure['origin_name'],
                         'destination_name': departure['destination_name'],
@@ -240,27 +237,24 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
                         })
 
                 self._state = min(map(
-                    _delta_mins, [train['scheduled'] for train in self._next_trains]
-            ))
+                    _delta_mins,
+                    [train['scheduled'] for train in self._next_trains]
+                ))
 
     @property
     def device_state_attributes(self):
         """Return other details about the sensor state."""
         if self._data != {}:
-            attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}  # {'attribution': 'Data provided by transportapi.com'}
+            attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}
             for key in [
                     ATTR_STATION_CODE,
                     ATTR_CALLING_AT
             ]:
-                attrs[key] = self._data.get(key)           # place these attributes
+                attrs[key] = self._data.get(key)
             if self._next_trains:
-                attrs[ATTR_NEXT_TRAINS] = self._next_trains # if there is data, append
+                attrs[ATTR_NEXT_TRAINS] = self._next_trains
             return attrs
 
-    @property
-    def unit_of_measurement(self):
-        """Return the unit this state is expressed in."""
-        return "min"
 
 def _delta_mins(hhmm_time_str):
     """Calculate time delta in minutes to a time in hh:mm format."""

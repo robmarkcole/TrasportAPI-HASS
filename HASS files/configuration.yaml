@@ -18,6 +18,7 @@ sensor:
   - platform: uk_transport
     app_id: !secret uk_transport_app_id
     app_key: !secret uk_transport_app_key
+    SCAN_INTERVAL: timedelta(seconds=180)
     live_bus_time:
         - stop_atcocode: 340000368SHE
           direction: Parkway Station
