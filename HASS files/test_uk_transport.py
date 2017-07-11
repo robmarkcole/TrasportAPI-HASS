@@ -8,13 +8,17 @@ import unittest
 from homeassistant.components.sensor.uk_transport import (
     UkTransportSensor,
     ATTR_ATCOCODE, ATTR_LOCALITY, ATTR_STOP_NAME, ATTR_NEXT_BUSES,
+    ATTR_STATION_CODE, ATTR_CALLING_AT, ATTR_NEXT_TRAINS,
     CONF_API_APP_KEY, CONF_API_APP_ID, CONF_LIVE_BUS_TIME,
-    CONF_STOP_ATCOCODE, CONF_BUS_DIRECTION, SCAN_INTERVAL)
+    CONF_STOP_ATCOCODE, CONF_BUS_DIRECTION, CONF_LIVE_TRAIN_TIME,
+    SCAN_INTERVAL)
 from homeassistant.setup import setup_component
 from tests.common import load_fixture, get_test_home_assistant
 
 BUS_ATCOCODE = '340000368SHE'
 BUS_DIRECTION = 'Wantage'
+TRAIN_STATION_CODE = 'WIM'
+TRAIN_DESTINATION_NAME = 'WAT'
 
 VALID_CONFIG = {
     'platform': 'uk_transport',
@@ -24,6 +28,9 @@ VALID_CONFIG = {
     CONF_LIVE_BUS_TIME: [{
         CONF_STOP_ATCOCODE: BUS_ATCOCODE,
         CONF_BUS_DIRECTION: BUS_DIRECTION}],
+    CONF_LIVE_TRAIN_TIME: [{
+        ATTR_STATION_CODE: TRAIN_STATION_CODE,
+        ATTR_CALLING_AT: TRAIN_DESTINATION_NAME}]
 }
 
 
@@ -40,7 +47,7 @@ class TestUkTransportSensor(unittest.TestCase):
         self.hass.stop()
 
     @requests_mock.Mocker()
-    def test_setup(self, mock_req):
+    def test_bus(self, mock_req):
         """Test for operational uk_transport sensor with proper attributes."""
         with requests_mock.Mocker() as mock_req:
             uri = re.compile(UkTransportSensor.TRANSPORT_API_URL_BASE + '*')
@@ -61,3 +68,28 @@ class TestUkTransportSensor(unittest.TestCase):
         for bus in bus_state.attributes.get(ATTR_NEXT_BUSES):
             print(bus['direction'], direction_re.match(bus['direction']))
             assert direction_re.search(bus['direction']) is not None
+
+    @requests_mock.Mocker()
+    def test_train(self, mock_req):
+        """Test for operational uk_transport sensor with proper attributes."""
+        with requests_mock.Mocker() as mock_req:
+            uri = re.compile(UkTransportSensor.TRANSPORT_API_URL_BASE + '*')
+            mock_req.get(uri, text=load_fixture('uk_transport_train.json'))
+            self.assertTrue(
+                setup_component(self.hass, 'sensor', {'sensor': self.config}))
+
+        train_state = self.hass.states.get('sensor.next_train_to_WAT')
+
+        assert type(train_state.state) == str
+        assert train_state.name == 'Next train to {}'.format(
+            TRAIN_DESTINATION_NAME)
+        assert train_state.attributes.get(
+            ATTR_STATION_CODE) == TRAIN_STATION_CODE
+        assert train_state.attributes.get(
+            ATTR_CALLING_AT) == TRAIN_DESTINATION_NAME
+        assert len(train_state.attributes.get(ATTR_NEXT_TRAINS)) == 25
+
+        assert train_state.attributes.get(
+            ATTR_NEXT_TRAINS)[0]['destination_name'] == 'London Waterloo'
+        assert train_state.attributes.get(
+            ATTR_NEXT_TRAINS)[0]['estimated'] == '06:13'

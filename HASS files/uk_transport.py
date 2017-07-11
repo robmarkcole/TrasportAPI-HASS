@@ -244,13 +244,10 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     @property
     def device_state_attributes(self):
         """Return other details about the sensor state."""
-        if self._data != {}:
+        if self._data is not None:
             attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}
-            for key in [
-                    ATTR_STATION_CODE,
-                    ATTR_CALLING_AT
-            ]:
-                attrs[key] = self._data.get(key)
+            attrs[ATTR_STATION_CODE] = self._station_code
+            attrs[ATTR_CALLING_AT] = self._calling_at
             if self._next_trains:
                 attrs[ATTR_NEXT_TRAINS] = self._next_trains
             return attrs
