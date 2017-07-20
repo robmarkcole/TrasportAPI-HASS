@@ -14,10 +14,10 @@ ha_release: 0.49
 ---
 
 
-The `uk_transport` sensor will display the time in minutes until the next departure in a specified direction from of a configured train station or bus stop. The sensor uses [transportAPI](http://www.transportapi.com/) to query live departure data and requires a developer application ID and key which can be obtained [here](https://developer.transportapi.com/). The [free tier](http://www.transportapi.com/plans/) allows 1000 requests daily, which is sufficient for a single sensor refreshing every 90 seconds.
+The `uk_transport` sensor will display the time in minutes until the next departure in a specified direction from of a configured train station or bus stop. The sensor uses [transportAPI](http://www.transportapi.com/) to query live departure data and requires a developer application ID and key which can be obtained [here](https://developer.transportapi.com/). The [free tier](http://www.transportapi.com/plans/) allows 1000 requests daily, which is sufficient for a single sensor refreshing every 87 seconds.
 
 <p class='note warning'>
-Additional sensors can be added but at the expense of a reduced refresh rate. 2 sensors can be updated every 3 mins, 3 sensors every 5 minutes, and so on.
+Additional sensors can be added but at the expense of a reduced refresh rate. 2 sensors can be updated every 2*87 = 174 seconds, and so on.
 </p>
 
 Train departure sensors require a three character long source `station_code` and destination `calling_at` station codes which are searchable on the [National Rail enquiries](http://www.nationalrail.co.uk/times_fares/ldb.aspx) website (e.g. `WAT` is London Waterloo). The validity of a route can be checked by performing a GET request to `/uk/train/station/{station_code}/live.json` in the [API reference webpage](https://developer.transportapi.com/docs?raml=https://transportapi.com/v3/raml/transportapi.raml##request_uk_train_station_station_code_live_json).
@@ -83,7 +83,6 @@ sensor:
   - platform: uk_transport
     app_id: abc123
     app_key: efg456
-    SCAN_INTERVAL: timedelta(seconds=180)
     live_bus_time:
         - stop_atcocode: 340000368SHE
           direction: Wantage
@@ -94,7 +93,6 @@ sensor:
 
 Additional configuration variables:
 
-- **SCAN_INTERVAL** (*Required*): If adding multiple sensors you should specify a [`SCAN_INTERVAL`](https://home-assistant.io/docs/configuration/platform_options/#scan-interval) to avoid reaching the daily 1000 requests limit of the free tier.
 - **app_key** (*Required*): Your application key
 - **live_bus_time** array (*Required*): Specify the bus stop `atcocode` and a valid `direction`.
 
