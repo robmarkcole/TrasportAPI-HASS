@@ -18,12 +18,12 @@ sensor:
   - platform: uk_transport
     app_id: !secret uk_transport_app_id
     app_key: !secret uk_transport_app_key
-    SCAN_INTERVAL: timedelta(seconds=180)
+    update_interval: '0:2'
     live_bus_time:
         - stop_atcocode: 340000368SHE
-          direction: Parkway Station
+          direction: Wantage
     live_train_time:
-        - station_code: WIM
+        - station_code: MAL
           calling_at: WAT
 
   - platform: template
@@ -44,13 +44,13 @@ sensor:
         friendly_name: 'Next train platform'
         value_template: '{{states.sensor.next_train_to_wat.attributes.next_trains[0].platform}}'
 
-
 group:
   default_view:
     view: yes
     icon: mdi:home
     entities:
       - group.Travel_group
+      - group.Scripts_group
 
   Travel_group:
     name: Upcoming travel
@@ -62,3 +62,4 @@ group:
       - sensor.next_trains_origin
       - sensor.next_trains_platform
       - sensor.next_trains_scheduled
+      - sensor.next_trains_update_interval

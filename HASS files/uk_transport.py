@@ -14,6 +14,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import ATTR_ATTRIBUTION
 
 from homeassistant.helpers.entity import Entity
+from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,8 +36,9 @@ CONF_LIVE_BUS_TIME = 'live_bus_time'
 CONF_LIVE_TRAIN_TIME = 'live_train_time'
 CONF_STOP_ATCOCODE = 'stop_atcocode'
 CONF_BUS_DIRECTION = 'direction'
+CONF_UPDATE_INTERVAL = 'update_interval'
 
-SCAN_INTERVAL = timedelta(seconds=90)
+#SCAN_INTERVAL = timedelta(seconds=90)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
@@ -46,13 +48,16 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
         vol.Required(CONF_BUS_DIRECTION): cv.string}],
     vol.Optional(CONF_LIVE_TRAIN_TIME): [{
         vol.Required(ATTR_STATION_CODE): cv.string,
-        vol.Required(ATTR_CALLING_AT): cv.string}]
+        vol.Required(ATTR_CALLING_AT): cv.string}],
+    vol.Optional(CONF_UPDATE_INTERVAL, default=timedelta(seconds=90)): (
+        vol.All(cv.time_period, cv.positive_timedelta)),
 })
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Get the uk_transport sensor."""
     sensors = []
+    interval = config.get(CONF_UPDATE_INTERVAL)
     if config.get(CONF_LIVE_BUS_TIME):
         for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
             stop_atcocode = live_bus_time.get(CONF_STOP_ATCOCODE)
@@ -62,7 +67,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
                     config.get(CONF_API_APP_ID),
                     config.get(CONF_API_APP_KEY),
                     stop_atcocode,
-                    bus_direction))
+                    bus_direction,
+                    interval))
 
     if config.get(CONF_LIVE_TRAIN_TIME):
         for live_train_time in config.get(CONF_LIVE_TRAIN_TIME):
@@ -73,7 +79,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
                     config.get(CONF_API_APP_ID),
                     config.get(CONF_API_APP_KEY),
                     station_code,
-                    calling_at))
+                    calling_at,
+                    interval))
 
     add_devices(sensors, True)
 
@@ -142,7 +149,7 @@ class UkTransportLiveBusTimeSensor(UkTransportSensor):
 
     ICON = 'mdi:bus'
 
-    def __init__(self, api_app_id, api_app_key, stop_atcocode, bus_direction):
+    def __init__(self, api_app_id, api_app_key, stop_atcocode, bus_direction, interval):
         """Construct a live bus time sensor."""
         self._stop_atcocode = stop_atcocode
         self._bus_direction = bus_direction
@@ -157,8 +164,9 @@ class UkTransportLiveBusTimeSensor(UkTransportSensor):
         UkTransportSensor.__init__(
             self, sensor_name, api_app_id, api_app_key, stop_url
         )
+        self.update = Throttle(interval)(self._update)
 
-    def update(self):
+    def _update(self):
         """Get the latest live departure data for the specified stop."""
         params = {'group': 'route', 'nextbuses': 'no'}
 
@@ -200,7 +208,7 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
 
     ICON = 'mdi:train'
 
-    def __init__(self, api_app_id, api_app_key, station_code, calling_at):
+    def __init__(self, api_app_id, api_app_key, station_code, calling_at, interval):
         """Construct a live bus time sensor."""
         self._station_code = station_code
         self._calling_at = calling_at
@@ -211,8 +219,9 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         UkTransportSensor.__init__(
             self, sensor_name, api_app_id, api_app_key, query_url
         )
+        self.update = Throttle(interval)(self._update)
 
-    def update(self):
+    def _update(self):
         """Get the latest live departure data for the specified stop."""
         params = {'darwin': 'false',
                   'calling_at': self._calling_at,
