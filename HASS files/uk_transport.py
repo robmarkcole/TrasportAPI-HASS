@@ -38,7 +38,6 @@ CONF_STOP_ATCOCODE = 'stop_atcocode'
 CONF_BUS_DIRECTION = 'direction'
 CONF_UPDATE_INTERVAL = 'update_interval'
 
-#SCAN_INTERVAL = timedelta(seconds=90)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
@@ -49,15 +48,22 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_LIVE_TRAIN_TIME): [{
         vol.Required(ATTR_STATION_CODE): cv.string,
         vol.Required(ATTR_CALLING_AT): cv.string}],
-    vol.Optional(CONF_UPDATE_INTERVAL, default=timedelta(seconds=90)): (
-        vol.All(cv.time_period, cv.positive_timedelta)),
 })
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Get the uk_transport sensor."""
     sensors = []
-    interval = config.get(CONF_UPDATE_INTERVAL)
+    number_sensors = 0
+    # Calulate the number of sensors.
+    if config.get(CONF_LIVE_BUS_TIME):
+        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
+            number_sensors += 1
+    if config.get(CONF_LIVE_TRAIN_TIME):
+        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
+            number_sensors += 1
+    interval = timedelta(seconds=87*number_sensors)
+
     if config.get(CONF_LIVE_BUS_TIME):
         for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
             stop_atcocode = live_bus_time.get(CONF_STOP_ATCOCODE)
