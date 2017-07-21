@@ -19,7 +19,6 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
-ATTRIBUTION = "Data provided by transportapi.com"
 ATTR_ATCOCODE = 'atcocode'
 ATTR_LOCALITY = 'locality'
 ATTR_STOP_NAME = 'stop_name'
@@ -190,8 +189,8 @@ class UkTransportLiveBusTimeSensor(UkTransportSensor):
     @property
     def device_state_attributes(self):
         """Return other details about the sensor state."""
+        attrs = {}
         if self._data is not None:
-            attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}
             for key in [
                     ATTR_ATCOCODE, ATTR_LOCALITY, ATTR_STOP_NAME,
                     ATTR_REQUEST_TIME
@@ -252,8 +251,8 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
     @property
     def device_state_attributes(self):
         """Return other details about the sensor state."""
+        attrs = {}
         if self._data is not None:
-            attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}
             attrs[ATTR_STATION_CODE] = self._station_code
             attrs[ATTR_CALLING_AT] = self._calling_at
             if self._next_trains:
