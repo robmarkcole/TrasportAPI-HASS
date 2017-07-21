@@ -19,55 +19,47 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
+ATTRIBUTION = "Data provided by transportapi.com"
 ATTR_ATCOCODE = 'atcocode'
 ATTR_LOCALITY = 'locality'
 ATTR_STOP_NAME = 'stop_name'
 ATTR_REQUEST_TIME = 'request_time'
 ATTR_NEXT_BUSES = 'next_buses'
-ATTRIBUTION = "Data provided by transportapi.com"
-
 ATTR_STATION_CODE = 'station_code'
 ATTR_CALLING_AT = 'calling_at'
 ATTR_NEXT_TRAINS = 'next_trains'
 
 CONF_API_APP_KEY = 'app_key'
 CONF_API_APP_ID = 'app_id'
-CONF_LIVE_BUS_TIME = 'live_bus_time'
-CONF_LIVE_TRAIN_TIME = 'live_train_time'
-CONF_STOP_ATCOCODE = 'stop_atcocode'
-CONF_BUS_DIRECTION = 'direction'
-CONF_UPDATE_INTERVAL = 'update_interval'
+CONF_QUERIES = 'queries'
+CONF_MODE = 'mode'
+CONF_ORIGIN = 'origin'
+CONF_DESTINATION = 'destination'
 
+_QUERY_SCHEME = vol.Schema({
+    vol.Required(CONF_MODE):
+        vol.All(cv.ensure_list, [vol.In(list(['bus', 'train']))]),
+    vol.Required(CONF_ORIGIN): cv.string,
+    vol.Required(CONF_DESTINATION): cv.string,
+})
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_APP_ID): cv.string,
     vol.Required(CONF_API_APP_KEY): cv.string,
-    vol.Optional(CONF_LIVE_BUS_TIME): [{
-        vol.Required(CONF_STOP_ATCOCODE): cv.string,
-        vol.Required(CONF_BUS_DIRECTION): cv.string}],
-    vol.Optional(CONF_LIVE_TRAIN_TIME): [{
-        vol.Required(ATTR_STATION_CODE): cv.string,
-        vol.Required(ATTR_CALLING_AT): cv.string}],
+    vol.Required(CONF_QUERIES): [_QUERY_SCHEME],
 })
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Get the uk_transport sensor."""
     sensors = []
-    number_sensors = 0
-    # Calulate the number of sensors.
-    if config.get(CONF_LIVE_BUS_TIME):
-        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
-            number_sensors += 1
-    if config.get(CONF_LIVE_TRAIN_TIME):
-        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
-            number_sensors += 1
+    number_sensors = len(config.get(CONF_QUERIES))
     interval = timedelta(seconds=87*number_sensors)
 
-    if config.get(CONF_LIVE_BUS_TIME):
-        for live_bus_time in config.get(CONF_LIVE_BUS_TIME):
-            stop_atcocode = live_bus_time.get(CONF_STOP_ATCOCODE)
-            bus_direction = live_bus_time.get(CONF_BUS_DIRECTION)
+    for query in config.get(CONF_QUERIES):
+        if 'bus' in query.get(CONF_MODE):
+            stop_atcocode = query.get(CONF_ORIGIN)
+            bus_direction = query.get(CONF_DESTINATION)
             sensors.append(
                 UkTransportLiveBusTimeSensor(
                     config.get(CONF_API_APP_ID),
@@ -76,10 +68,9 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
                     bus_direction,
                     interval))
 
-    if config.get(CONF_LIVE_TRAIN_TIME):
-        for live_train_time in config.get(CONF_LIVE_TRAIN_TIME):
-            station_code = live_train_time.get(ATTR_STATION_CODE)
-            calling_at = live_train_time.get(ATTR_CALLING_AT)
+        elif 'train' in query.get(CONF_MODE):
+            station_code = query.get(CONF_ORIGIN)
+            calling_at = query.get(CONF_DESTINATION)
             sensors.append(
                 UkTransportLiveTrainTimeSensor(
                     config.get(CONF_API_APP_ID),
@@ -155,7 +146,8 @@ class UkTransportLiveBusTimeSensor(UkTransportSensor):
 
     ICON = 'mdi:bus'
 
-    def __init__(self, api_app_id, api_app_key, stop_atcocode, bus_direction, interval):
+    def __init__(self, api_app_id, api_app_key,
+                 stop_atcocode, bus_direction, interval):
         """Construct a live bus time sensor."""
         self._stop_atcocode = stop_atcocode
         self._bus_direction = bus_direction
@@ -214,7 +206,8 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
 
     ICON = 'mdi:train'
 
-    def __init__(self, api_app_id, api_app_key, station_code, calling_at, interval):
+    def __init__(self, api_app_id, api_app_key,
+                 station_code, calling_at, interval):
         """Construct a live bus time sensor."""
         self._station_code = station_code
         self._calling_at = calling_at

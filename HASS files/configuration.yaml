@@ -18,13 +18,13 @@ sensor:
   - platform: uk_transport
     app_id: !secret uk_transport_app_id
     app_key: !secret uk_transport_app_key
-    update_interval: '0:2'
-    live_bus_time:
-        - stop_atcocode: 340000368SHE
-          direction: Wantage
-    live_train_time:
-        - station_code: MAL
-          calling_at: WAT
+    queries:
+      - mode: bus
+        origin: 340000368SHE
+        destination: Wantage
+      - mode: train
+        origin: MAL
+        destination: WAT
 
   - platform: template
     sensors:
