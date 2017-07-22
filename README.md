@@ -110,4 +110,4 @@ And the template sensor for viewing the next bus attributes.
 
 Powered by [transportAPI](http://www.transportapi.com/)
 
-<img src="https://github.com/robmarkcole/TrasportAPI-HASS/blob/master/Usage.png" width="500" >
+<img src="https://github.com/robmarkcole/TrasportAPI-HASS/blob/master/Usage.png">
