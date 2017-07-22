@@ -6,13 +6,10 @@ https://home-assistant.io/components/sensor.uk_transport/
 import logging
 import re
 from datetime import datetime, timedelta
-
 import requests
 import voluptuous as vol
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import ATTR_ATTRIBUTION
-
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv

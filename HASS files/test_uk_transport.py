@@ -1,6 +1,5 @@
 """The tests for the uk_transport platform."""
 import re
-from datetime import timedelta
 
 import requests_mock
 import unittest
@@ -9,9 +8,7 @@ from homeassistant.components.sensor.uk_transport import (
     UkTransportSensor,
     ATTR_ATCOCODE, ATTR_LOCALITY, ATTR_STOP_NAME, ATTR_NEXT_BUSES,
     ATTR_STATION_CODE, ATTR_CALLING_AT, ATTR_NEXT_TRAINS,
-    CONF_API_APP_KEY, CONF_API_APP_ID, CONF_LIVE_BUS_TIME,
-    CONF_STOP_ATCOCODE, CONF_BUS_DIRECTION, CONF_LIVE_TRAIN_TIME,
-    SCAN_INTERVAL)
+    CONF_API_APP_KEY, CONF_API_APP_ID)
 from homeassistant.setup import setup_component
 from tests.common import load_fixture, get_test_home_assistant
 
@@ -24,14 +21,15 @@ VALID_CONFIG = {
     'platform': 'uk_transport',
     CONF_API_APP_ID: 'foo',
     CONF_API_APP_KEY: 'ebcd1234',
-    SCAN_INTERVAL: timedelta(seconds=180),
-    CONF_LIVE_BUS_TIME: [{
-        CONF_STOP_ATCOCODE: BUS_ATCOCODE,
-        CONF_BUS_DIRECTION: BUS_DIRECTION}],
-    CONF_LIVE_TRAIN_TIME: [{
-        ATTR_STATION_CODE: TRAIN_STATION_CODE,
-        ATTR_CALLING_AT: TRAIN_DESTINATION_NAME}]
-}
+    'queries': [{
+      'mode': 'bus',
+      'origin': BUS_ATCOCODE,
+      'destination': BUS_DIRECTION},
+      {
+      'mode': 'train',
+      'origin': TRAIN_STATION_CODE,
+      'destination': TRAIN_DESTINATION_NAME}]
+      }
 
 
 class TestUkTransportSensor(unittest.TestCase):

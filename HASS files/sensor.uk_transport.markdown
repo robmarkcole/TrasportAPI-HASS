@@ -98,4 +98,25 @@ sensor:
         destination: WAT
 ```
 
+And the template sensor for viewing the next bus attributes.
+
+```yaml
+# Example configuration.yaml entry for a template sensor to access the attributes of the next departing bus.
+- platform: template
+  sensors:
+    next_bus_route:
+      friendly_name: 'Next bus route'
+      value_template: '{{states.sensor.next_bus_to_wantage.attributes.next_buses[0].route}}'
+    next_bus_direction:
+      friendly_name: 'Next bus direction'
+      value_template: '{{states.sensor.next_bus_to_wantage.attributes.next_buses[0].direction}}'
+    next_bus_scheduled:
+      friendly_name: 'Next bus scheduled'
+      value_template: '{{states.sensor.next_bus_to_wantage.attributes.next_buses[0].scheduled}}'
+    next_bus_estimated:
+      friendly_name: 'Next bus estimated'
+      value_template: '{{states.sensor.next_bus_to_wantage.attributes.next_buses[0].estimated}}'
+
+```
+
 Powered by [transportAPI](http://www.transportapi.com/)
