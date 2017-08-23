@@ -88,6 +88,7 @@ class UkTransportSensor(Entity):
     """
 
     TRANSPORT_API_URL_BASE = "https://transportapi.com/v3/uk/"
+    ICON = 'mdi:train'
 
     def __init__(self, name, api_app_id, api_app_key, url):
         """Initialize the sensor."""
@@ -179,9 +180,12 @@ class UkTransportLiveBusTimeSensor(UkTransportSensor):
                             'estimated': departure['best_departure_estimate']
                         })
 
-            self._state = min(map(
-                _delta_mins, [bus['scheduled'] for bus in self._next_buses]
-            ))
+            if self._next_buses:
+                self._state = min(
+                    _delta_mins(bus['scheduled'])
+                    for bus in self._next_buses)
+            else:
+                self._state = None
 
     @property
     def device_state_attributes(self):
@@ -207,6 +211,7 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
         """Construct a live bus time sensor."""
         self._station_code = station_code
         self._calling_at = calling_at
+        self._next_trains = []
 
         sensor_name = 'Next train to {}'.format(calling_at)
         query_url = 'train/station/{}/live.json'.format(station_code)
@@ -240,10 +245,12 @@ class UkTransportLiveTrainTimeSensor(UkTransportSensor):
                         'operator_name': departure['operator_name']
                         })
 
-                self._state = min(map(
-                    _delta_mins,
-                    [train['scheduled'] for train in self._next_trains]
-                ))
+                if self._next_trains:
+                    self._state = min(
+                        _delta_mins(train['scheduled'])
+                        for train in self._next_trains)
+                else:
+                    self._state = None
 
     @property
     def device_state_attributes(self):
