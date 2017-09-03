@@ -1,0 +1,8 @@
+default_view:
+  view: yes
+  entities:
+    - group.Trains
+
+Trains:
+  entities:
+    - sensor.next_train_to_wim

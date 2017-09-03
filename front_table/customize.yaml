@@ -1,0 +1,6 @@
+sun.sun:
+  hidden: true
+sensor.crypto_profit:
+  custom_ui_state_card: crypto_profit
+sensor.next_train_to_wim:
+  custom_ui_state_card: uk_transport
