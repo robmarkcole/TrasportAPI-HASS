@@ -1,8 +1,8 @@
-default_view:
-  view: yes
-  entities:
-    - group.Trains
-
-Trains:
+next_train_to_wim:
   entities:
     - sensor.next_train_to_wim
+
+vw_traintimes:
+  view: yes
+  entities:
+    - group.next_train_to_wim

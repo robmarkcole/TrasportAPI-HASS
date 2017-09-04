@@ -1,0 +1,67 @@
+<dom-module id="state-card-traintimes">
+  <template>
+    <style>
+      table {
+        width: 100%;
+      }
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+      tr.header {
+        background-color: #03a9f4;
+        color: #ffffff;
+        text-align:center;
+        vertical-align:middle;    
+      }
+      td {
+        text-align:center;
+        vertical-align:middle;  
+      }
+    </style>
+    
+    <p>
+      <b>Next Train </b><i>(Minutes)</i>: <b> {{ stateObj.state }} </b>
+    </p>
+
+    <table>
+      <thead>
+        <tr class="header">
+          <th>Platform</th>
+          <th>Destination</th>
+          <th>Scheduled</th>
+          <th>Status</th>
+          <th>Estimated</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template is="dom-repeat" items="{{stateObj.attributes.next_trains}}">
+          <tr>
+            <td>{{item.platform}}</td>          
+            <td>{{item.destination_name}}</td>
+            <td>{{item.scheduled}}</td>
+            <td>{{item.status}}</td>
+            <td>{{item.estimated}}</td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </template>    
+</dom-module>
+
+<script>
+  Polymer({
+    is: 'state-card-traintimes',
+    
+    properties: {
+      hass: {
+        type: Object,
+      },
+      
+      stateObj: {
+        type: Object,
+      },
+    },
+  });
+</script>
+
+  
