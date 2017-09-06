@@ -23,7 +23,7 @@ else:
                 SCHEDULED = True
                 train_status = train['status']
 
-                if train['status'] != hass.states.get(TOI_ENTITY_ID).state:
+                if train_status != hass.states.get(TOI_ENTITY_ID).state:
                     logger.warn('States equal')
                     hass.states.set(TOI_ENTITY_ID, train_status)
 
