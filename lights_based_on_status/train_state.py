@@ -24,7 +24,6 @@ else:
                 train_status = train['status']
 
                 if train_status != hass.states.get(TOI_ENTITY_ID).state:
-                    logger.warn('States equal')
                     hass.states.set(TOI_ENTITY_ID, train_status)
 
                     if train_status == 'ON TIME':
