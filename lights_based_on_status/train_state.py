@@ -27,31 +27,34 @@ else:
                     hass.states.set(TOI_ENTITY_ID, train_status)
 
                     if train_status == 'ON TIME':
-                        hass.services.call('light', 'turn_on', {
-                            "entity_id": 'light.lamp', 'color_name': 'green'})
-
                         hass.services.call('notify', NOTIFY_ID, {
                             "title": MSG_TITLE,
-                            "message": "The {} is scheduled to be on time."
+                            "message": "The {} is on time."
                             .format(TOI_TIME)})
 
-                    elif train_status == 'LATE':
                         hass.services.call('light', 'turn_on', {
-                            "entity_id": 'light.lamp', 'color_name': 'orange'})
+                            "entity_id": 'light.lamp',
+                            'color_name': 'green'})
 
+                    elif train_status == 'LATE':
                         hass.services.call('notify', NOTIFY_ID, {
                             "title": MSG_TITLE,
-                            "message": "The {} will be late and ETA is"
+                            "message": "The {} will be late and its ETA is"
                             .format(TOI_TIME) + train['estimated']})
 
-                    elif train_status == 'CANCELLED':
                         hass.services.call('light', 'turn_on', {
-                            "entity_id": 'light.lamp', 'color_name': 'red'})
+                            "entity_id": 'light.lamp',
+                            'color_name': 'orange'})
 
+                    elif train_status == 'CANCELLED':
                         hass.services.call('notify', NOTIFY_ID, {
                             "title": MSG_TITLE,
                             "message": "The {} has been cancelled."
                             .format(TOI_TIME)})
+
+                        hass.services.call('light', 'turn_on', {
+                            "entity_id": 'light.lamp',
+                            'color_name': 'red'})
                 break
     except:
         logger.warn('Error in train_state.py')
