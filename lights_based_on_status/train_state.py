@@ -14,9 +14,9 @@ HASS = 1
 # Set config
 SOURCE_SENSOR_PREFIX = 'sensor.next_train_to_'
 TRAIN_SENSOR_PREFIX = 'sensor.train_'
-# Commute stations and times, codes from
-TIMES = {'VIC' : ['07:34', '07:49', '09:00'],
-         'HHE' : ['18:30', '18:44', '19:00']}
+# Commute stations and times, station code can be found on national rail
+TIMES = {'VIC' : ['07:37', '07:44'],
+         'HHE' : ['18:29', '18:45', '18:59']}
 # Set notification details
 MSG_TITLE = 'Train Status Update'
 NOTIFY_ID = 'tris'
@@ -270,17 +270,19 @@ if len(TIMES) > 0:
                                     'color_name': 'blue'})
                                 time.sleep(1)
 
-                        logger.info('Found the ' + train['scheduled'])
+                        logger.warn('Found the ' + train['scheduled'])
                         # logger.warn(hass.states.get(TRAIN_SENSOR_PREFIX + train['scheduled'].replace(':', '')).state)
                         # If the status has changed compared to what's in HASS update it and then notify
                         if HASS and hass.states.get(TRAIN_SENSOR_PREFIX + train['scheduled'].replace(':', '')).state != train['status']:
-                            #Set the state in HASS
+                            # Set the state in HASS
                             hass.states.set(TRAIN_SENSOR_PREFIX + train['scheduled'].replace(':', ''), train['status'])
+                            # TODO Let's see if we can log the attributes too
+                            #hass.states.set(TRAIN_SENSOR_PREFIX + train['scheduled'].replace(':', '').attributes, train)
                             # We've an update, let's notify
                             NOTIFY = 1
 
-                        if train['status'] == 'ON TIME' or train['status'] == 'EARLY':
-                            logger.info('The ' + train['scheduled'] + ' appears to be ' + train['status'].lower())
+                        if train['scheduled'] >= train['estimated']:
+                            logger.warn('The ' + train['scheduled'] + ' appears to be ontime or early')
 
                             # Notify and form the message depending on the info
                             if NOTIFY and HASS:
@@ -298,12 +300,12 @@ if len(TIMES) > 0:
                                     "entity_id": LAMP_ID,
                                     'color_name': 'green'})
 
-                        elif train['status'] == 'LATE':
-                            logger.info('The ' + train['scheduled'] + ' is is late (' + train['estimated'] + ')')
+                        elif train['scheduled'] < train['estimated']:
+                            logger.warn('The ' + train['scheduled'] + ' is is late (' + train['estimated'] + ')')
                             # Notify and form the message depending on the info
                             if NOTIFY and HASS:
                                 if bool(train['platform']):
-                                    message = "The " + train['scheduled'] + " " + train['operator_name'] + " train from " + train['origin_name'] + " to " + train['destination_name'] + " is " + train['status'].lower() + " (" + train['estimated'] + ") and should land on platform" + train['platform']
+                                    message = "The " + train['scheduled'] + " " + train['operator_name'] + " train from " + train['origin_name'] + " to " + train['destination_name'] + " is " + train['status'].lower() + " (" + train['estimated'] + ") and should land on platform " + train['platform']
                                 else:
                                     message = "The " + train['scheduled'] + " " + train['operator_name'] + " train from " + train['origin_name'] + " to " + train['destination_name'] + " is " + train['status'].lower() + " (" + train['estimated'] + ")"
 
@@ -317,7 +319,7 @@ if len(TIMES) > 0:
                                     'color_name': 'orange'})
 
                         elif train['status'] == 'CANCELLED':
-                            logger.info('The ' + train['scheduled'] + ' is cancelled')
+                            logger.warn('The ' + train['scheduled'] + ' is cancelled')
                             # Notify and form the message depending on the info
                             if NOTIFY and HASS:
                                 message = "The " + train['scheduled'] + " " + train['operator_name'] + " train from " + train['origin_name'] + " to " + train['destination_name'] + " is " + train['status'].lower()
@@ -330,6 +332,21 @@ if len(TIMES) > 0:
                                 hass.services.call('light', 'turn_on', {
                                     "entity_id": LAMP_ID,
                                     'color_name': 'red'})
+
+                        elif train['status'] == 'STARTS HERE':
+                            logger.warn('The ' + train['scheduled'] + ' starts at ' + train['origin_name'] + ' (' + train['estimated'] + ')')
+                            # Notify and form the message depending on the info
+                            if NOTIFY and HASS:
+                                message = "The " + train['scheduled'] + " " + train['operator_name'] + " train to " + train['destination_name'] + " starts at " + train['origin_name'] + " and is estimated to depart at " + train['estimated']
+
+                                hass.services.call('notify', NOTIFY_ID, {
+                                   "title": MSG_TITLE,
+                                   "message": message})
+                            # Change the lamp colour
+                            if HASS and bool(LAMP_ID):
+                                hass.services.call('light', 'turn_on', {
+                                    "entity_id": LAMP_ID,
+                                    'color_name': 'green'})
                         # Sleep to keep the lamp colour shown for 1 second
                         if HASS and bool(LAMP_ID): time.sleep(1)
 
@@ -340,7 +357,7 @@ if len(TIMES) > 0:
 
                 # If we didn't find any its likely they've not been announced yet
                 if len(found) == 0:
-                    logger.warn('No ' + direction.lower() + ' departures found')
+                    logger.warn('No trains to ' + direction.lower() + ' found')
                 # Let's tidy up hass states for trains that were not found
                 for train in TIMES[direction]:
                     if train not in found:
