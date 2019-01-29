@@ -104,10 +104,40 @@ And the template sensor for viewing the next bus attributes.
 
 ```
 
-
-Powered by [transportAPI](http://www.transportapi.com/)
-
 <img src="https://github.com/robmarkcole/TrasportAPI-HASS/blob/master/Usage.png">
 
 ## Managing API requests
 Use the service `homeassistant.update_entity` to request the update of an entity, rather than waiting for the next scheduled update. This means you can set a really long `scan_interval` in the config options and then update on demand, ideal for those services where you have low API limit.
+
+## Display a timetable using Lovelace
+To display a timetable like the one below using Lovelace UI, first get the [flex-table-card](https://github.com/custom-cards/flex-table-card) then edit your `ui-lovelace.yaml` file to include something like:
+
+```yaml
+resources:
+  - type: js
+    url: /local/flex-table-card.js
+.
+.
+.
+      - type: custom:flex-table-card
+        title: Trains to Waterloo
+        entities:
+          include: sensor.next_train_to_wat
+        columns:
+          - name: Origin
+            attr_as_list: next_trains
+            modify: x.origin_name
+          - name: Destination
+            attr_as_list: next_trains
+            modify: x.destination_name
+          - name: Time
+            attr_as_list: next_trains
+            modify: x.scheduled
+          - name: Est
+            attr_as_list: next_trains
+            modify: x.estimated
+```
+
+<p align="center">
+<img src="https://github.com/robmarkcole/TrasportAPI-HASS/blob/master/lovelace_timetable.png" width="500">
+</p>
