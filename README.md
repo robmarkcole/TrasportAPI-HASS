@@ -1,10 +1,7 @@
 # TrasportAPI-HASS
-UK bus and train TransportAPI component. Place uk_transport.py in /custom_components/sensor
+UK bus and train TransportAPI component. Requires developer account on http://www.transportapi.com/
 
-Requires developer account on http://www.transportapi.com/
-
-
-The `uk_transport` sensor will display the time in minutes until the next departure in a specified direction from of a configured train station or bus stop. The sensor uses [transportAPI](http://www.transportapi.com/) to query live departure data and requires a developer application ID and key which can be obtained [here](https://developer.transportapi.com/). The [free tier](http://www.transportapi.com/plans/) allows 1000 requests daily, which is sufficient for a single sensor refreshing every 87 seconds.
+The `uk_transport` sensor will display the time in minutes until the next departure in a specified direction from of a configured train station or bus stop. The sensor uses [transportAPI](http://www.transportapi.com/) to query live departure data and requires a developer application ID and key which can be obtained [here](https://developer.transportapi.com/). The [free tier](http://www.transportapi.com/plans/) allows 1000 requests daily, which is sufficient for a single sensor refreshing every 87 seconds. See **Managing API requests** at bottom of page.
 
 Additional sensors can be added but at the expense of a reduced refresh rate. 2 sensors can be updated every 2*87 = 174 seconds, and so on.
 
@@ -111,3 +108,6 @@ And the template sensor for viewing the next bus attributes.
 Powered by [transportAPI](http://www.transportapi.com/)
 
 <img src="https://github.com/robmarkcole/TrasportAPI-HASS/blob/master/Usage.png">
+
+## Managing API requests
+Use the service `homeassistant.update_entity` to request the update of an entity, rather than waiting for the next scheduled update. This means you can set a really long `scan_interval` in the config options and then update on demand, ideal for those services where you have low API limit.
